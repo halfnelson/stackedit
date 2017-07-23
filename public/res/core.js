@@ -328,6 +328,7 @@ define([
 	};
 
 	var appId = 'ESTHdCYOi18iLhhO';
+	/*
 	var monetize = new MonetizeJS({
 		applicationID: appId
 	});
@@ -377,7 +378,7 @@ define([
 		});
 	}, 3000);
 
-	eventMgr.addListener('onOfflineChanged', checkPayment);
+	eventMgr.addListener('onOfflineChanged', checkPayment); */
 
 	// Other initialization that are not prioritary
 	eventMgr.addListener("onReady", function() {
@@ -576,8 +577,8 @@ define([
 			document.getElementById('input-settings-theme').innerHTML = themeOptions;
 		}
 
-		$('.modal-header').append('<a class="dialog-header-message" href="http://classeur.io" target="_blank"><i class="icon-megaphone"></i> Try Classeur beta!</a>');
-		checkPayment();
+		//$('.modal-header').append('<a class="dialog-header-message" href="http://classeur.io" target="_blank"><i class="icon-megaphone"></i> Try Classeur beta!</a>');
+		//checkPayment();
 	});
 
 	return core;
