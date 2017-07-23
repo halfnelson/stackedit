@@ -176,7 +176,8 @@ gulp.task('build', [
  */
 
 gulp.task('cache-manifest', ['build'], function() {
-	return gulp.src('./public/cache.manifest')
+	return gulp.src('./public/cache.manifest.template')
+		.pipe(rename('./public/cache.manifest'))
 		.pipe(replace(/(#Date ).*/, '$1' + Date()))
 		.pipe(inject(gulp.src([
 				'./res-min/**/*.*'
