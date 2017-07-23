@@ -23,6 +23,7 @@
     "bower-requirejs": "^1.1.0",
     "del": "^3.0.0",
     "event-stream": "^3.1.7",
+    "fs-extra": "^4.0.0",
     "gulp": "^3.8.7",
     "gulp-bump": "^0.1.11",
     "gulp-clean": "^0.3.1",

@@ -12,7 +12,7 @@ var replace = require('gulp-replace');
 var bump = require('gulp-bump');
 var childProcess = require('child_process');
 var runSequence = require('run-sequence');
-var fs = require('fs');
+var fs = require('fs-extra');
 var ejs = require('gulp-ejs');
 var merge =require('merge-stream');
 var rename = require('gulp-rename');
@@ -237,14 +237,25 @@ gulp.task('clean-docs', function() {
 });
 
 
+gulp.task('copy-resmin', ['clean-docs', 'cache-manifest'], function() {
+	return fs.ensureDir('./docs').then(function() {
+		return fs.copy('./public/res-min','./docs/res-min')
+	});
+});
 
-gulp.task('publish-public', ['clean-docs', 'cache-manifest'], function() {
-	var resmin = gulp.src(['./public/res-min/**/*']).pipe(gulp.dest('./docs/res-min'));
-	var mathjax = gulp.src(['./public/res/bower-libs/MathJax/**/*']).pipe(gulp.dest('./docs/res/bower-libs/MathJax'));
+gulp.task('copy-mathjax', ['clean-docs', 'cache-manifest'], function() {
+	return fs.ensureDir('./docs/res/bower-libs').then(function() {
+		return fs.copy('./public/res/bower-libs/MathJax','./docs/res/bower-libs/MathJax')
+	});
+});
+
+
+
+gulp.task('publish-public', ['clean-docs', 'cache-manifest', 'copy-resmin','copy-mathjax'], function(done) {
 	var cache = gulp.src(['./public/cache.manifest']).pipe(gulp.dest('./docs'));
+	var libs = gulp.src(['./public/libs/**/*']).pipe(gulp.dest('./docs/libs'));
 	var roothtml = gulp.src(['./public/*.html']).pipe(gulp.dest('./docs'));
-
-	return merge(resmin, mathjax, cache, roothtml);
+	return merge(cache, roothtml, libs);
 });
 
 gulp.task('publish-views',['publish-public'], function() {
