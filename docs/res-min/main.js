@@ -27827,9 +27827,7 @@ define("editor", [ "jquery", "underscore", "utils", "settings", "eventMgr", "pri
    var r = n.url, a = r.lastIndexOf("/");
    return -1 === a ? void s.error(new Error("Invalid URL parameter.")) : (i = r.substring(a + 1), 
    void t.ajax({
-    url: e.DOWNLOAD_IMPORT_URL + "?" + t.param({
-     url: r
-    }),
+    url: r,
     dataType: "text",
     timeout: e.AJAX_TIMEOUT
    }).done(function(t) {

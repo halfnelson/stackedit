@@ -26,9 +26,7 @@ define([
 			}
 			title = url.substring(slashUrl + 1);
 			$.ajax({
-				url: constants.DOWNLOAD_IMPORT_URL + '?' + $.param({
-					url: url
-				}),
+				url: url,
 				dataType: 'text',
 				timeout: constants.AJAX_TIMEOUT
 			}).done(function(result) {
