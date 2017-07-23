@@ -12,9 +12,11 @@ var replace = require('gulp-replace');
 var bump = require('gulp-bump');
 var childProcess = require('child_process');
 var runSequence = require('run-sequence');
-var fs = require('fs');
-
-
+var fs = require('fs-extra');
+var ejs = require('gulp-ejs');
+var merge =require('merge-stream');
+var rename = require('gulp-rename');
+var del = require('del');
 /** __________________________________________
  * constants.js
  */
@@ -70,8 +72,8 @@ gulp.task('copy-requirejs', ['clean-requirejs'], function() {
 gulp.task('requirejs', [
 	'copy-requirejs',
 	'constants'
-], function() {
-	return requirejs({
+], function(done) {
+	 requirejs({
 		baseUrl: 'public/res',
 		name: 'main',
 		out: 'main.js',
@@ -86,7 +88,7 @@ gulp.task('requirejs', [
 			'less/lessc-server',
 			'less/lessc'
 		]
-	})
+	}).on("error", function(e) { console.log("error", e); })
 		.pipe(uglify({
 			output: {
 				beautify: true,
@@ -94,7 +96,8 @@ gulp.task('requirejs', [
 				ascii_only: true
 			}
 		}))
-		.pipe(gulp.dest('./public/res-min/'));
+		.pipe(gulp.dest('./public/res-min/')).on("error", function(e) { done(e) } )
+		.on('end', function() { console.log("done"); done(); });
 });
 
 gulp.task('bower-requirejs', function(cb) {
@@ -153,12 +156,32 @@ gulp.task('copy-img', ['clean-img'], function() {
 		.pipe(gulp.dest('./public/res-min/img/'));
 });
 
+gulp.task('clean', [
+	'clean-requirejs',
+	'clean-less',
+	'clean-font',
+	'clean-img'
+]);
+
+gulp.task('build', [
+			'requirejs',
+			'less',
+			'copy-font',
+			'copy-img'
+		]);
+
+
 /** __________________________________________
  * cache.manifest
  */
 
-gulp.task('cache-manifest', function() {
-	return gulp.src('./public/cache.manifest')
+gulp.task('clean-cache-manifest', function() {
+	return del('./public/cache.manifest');
+})
+
+gulp.task('cache-manifest', ['build', 'clean-cache-manifest'], function() {
+	return gulp.src('./public/cache.manifest.template')
+		.pipe(rename('cache.manifest'))
 		.pipe(replace(/(#Date ).*/, '$1' + Date()))
 		.pipe(inject(gulp.src([
 				'./res-min/**/*.*'
@@ -206,23 +229,58 @@ gulp.task('cache-manifest', function() {
 		.pipe(gulp.dest('./public/'));
 });
 
-gulp.task('clean', [
-	'clean-requirejs',
-	'clean-less',
-	'clean-font',
-	'clean-img'
-]);
-gulp.task('default', function(cb) {
-	runSequence([
-			'jshint',
-			'requirejs',
-			'less',
-			'copy-font',
-			'copy-img'
-		],
-		'cache-manifest',
-		cb);
+
+
+
+gulp.task('clean-docs', function() {
+	return del(["docs/**","!docs"]);
 });
+
+
+gulp.task('copy-resmin', ['clean-docs', 'cache-manifest'], function() {
+	return fs.ensureDir('./docs').then(function() {
+		return fs.copy('./public/res-min','./docs/res-min')
+	});
+});
+
+gulp.task('copy-mathjax', ['clean-docs', 'cache-manifest'], function() {
+	return fs.ensureDir('./docs/res/bower-libs').then(function() {
+		return fs.copy('./public/res/bower-libs/MathJax','./docs/res/bower-libs/MathJax')
+	});
+});
+
+
+
+gulp.task('publish-public', ['clean-docs', 'cache-manifest', 'copy-resmin','copy-mathjax'], function(done) {
+	var cache = gulp.src(['./public/cache.manifest']).pipe(gulp.dest('./docs'));
+	var libs = gulp.src(['./public/libs/**/*']).pipe(gulp.dest('./docs/libs'));
+	var roothtml = gulp.src(['./public/*.html']).pipe(gulp.dest('./docs'));
+	return merge(cache, roothtml, libs);
+});
+
+gulp.task('publish-views',['publish-public'], function() {
+	return gulp.src("./views/*.html")
+		.pipe(ejs({
+			cache: false
+		}))
+		.pipe(gulp.dest("./docs"));
+});
+
+
+gulp.task('publish-index', ['publish-views'], function() {
+	return gulp.src("./docs/editor.html").pipe(rename("index.html")).pipe(gulp.dest("./docs"));
+})
+
+
+gulp.task('publish-ghpages', ['publish-index']);
+
+
+
+
+
+gulp.task('default', ['publish-ghpages']);
+
+
 
 function bumpTask(importance) {
 	return function() {
@@ -251,7 +309,7 @@ function exec(cmd, cb) {
 gulp.task('git-tag', function(cb) {
 	var tag = 'v' + getVersion();
 	util.log('Tagging as: ' + util.colors.cyan(tag));
-	exec('git add ./public/res-min', function(err) {
+	exec('git add ./public/res-min ./docs', function(err) {
 		if(err) {
 			return cb(err);
 		}
