@@ -255,7 +255,8 @@ gulp.task('publish-public', ['clean-docs', 'cache-manifest', 'copy-resmin','copy
 	var cache = gulp.src(['./public/cache.manifest']).pipe(gulp.dest('./docs'));
 	var libs = gulp.src(['./public/libs/**/*']).pipe(gulp.dest('./docs/libs'));
 	var roothtml = gulp.src(['./public/*.html']).pipe(gulp.dest('./docs'));
-	return merge(cache, roothtml, libs);
+	var html = gulp.src(['./public/html/**/*']).pipe(gulp.dest('./docs/html'));
+	return merge(cache, roothtml, libs, html);
 });
 
 gulp.task('publish-views',['publish-public'], function() {
