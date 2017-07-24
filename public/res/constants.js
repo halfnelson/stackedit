@@ -31,10 +31,10 @@ define([], function() {
 	constants.COUCHDB_URL = 'https://stackedit.smileupps.com/documents';
 
 	// Site dependent
-	constants.BASE_URL = "http://localhost/";
+	constants.BASE_URL = "http://localhost:3000/";
 	constants.GOOGLE_CLIENT_ID = '241271498917-lev37kef013q85avc91am1gccg5g8lrb.apps.googleusercontent.com';
-	constants.GITHUB_CLIENT_ID = 'e47fef6055344579799d';
-	constants.GATEKEEPER_URL = "https://stackedit-gatekeeper-localhost.herokuapp.com/";
+	constants.GITHUB_CLIENT_ID = 'b1d8409acad75bac5993';
+	constants.GATEKEEPER_URL = "http://localhost:9999/";
 	constants.TUMBLR_PROXY_URL = "https://stackedit-tumblr-proxy-local.herokuapp.com/";
 	constants.WORDPRESS_CLIENT_ID = '23361';
 	constants.WORDPRESS_PROXY_URL = "https://stackedit-io-wordpress-proxy.herokuapp.com/";
