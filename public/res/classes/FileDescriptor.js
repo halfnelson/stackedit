@@ -176,9 +176,6 @@ define([
 		}).each(function(attributes) {
 			addPublishIcon(result, attributes);
 		});
-		if(_.size(this.publishLocations) !== 0) {
-			result.push('<i class="icon-upload title-icon-category"></i>');
-		}
 		result.push(_.escape(this.title));
 		return result.join('');
 	};

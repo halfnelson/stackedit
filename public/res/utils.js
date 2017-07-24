@@ -397,6 +397,16 @@ define([
 		$('.modal-redirect-confirm').modal("show");
 	};
 
+	var importCallbackOverwrite;
+	var importCallbackKeep;
+	utils.overwriteConfirm = function(callbackOverwrite, callbackKeep) {
+		importCallbackOverwrite = callbackOverwrite;
+		importCallbackKeep = callbackKeep;
+		$('.modal-overwrite-confirm').modal("show");
+	};
+
+
+
 	utils.init = function() {
 		$('.action-redirect-confirm').click(function() {
 			redirectCallbackCancel = undefined;
@@ -407,6 +417,17 @@ define([
 				redirectCallbackCancel && redirectCallbackCancel();
 			});
 		});
+
+
+		$('.action-import-overwrite').click(function() {
+			importCallbackOverwrite();
+		});
+		$('.action-import-keep').click(function() {
+			importCallbackKeep();
+		});
+
+
+
 		$(document).on('click', function() {
 			// Close opened tooltip if any
 			openedTooltip && openedTooltip.tooltip('hide');
