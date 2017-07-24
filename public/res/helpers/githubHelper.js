@@ -134,6 +134,7 @@ define([
         connect(task);
         authenticate(task);
         var content;
+        var sha;
         task.onRun(function() {
             function getUsername() {
                 var user = github.getUser();
@@ -148,12 +149,13 @@ define([
             }
             function read() {
                 var repo = github.getRepo(username, reponame);
-                repo.read(branch, path, function(err, data) {
+                repo.read(branch, path, function(err, data, filesha) {
                     if(err) {
                         handleError(err, task);
                         return;
                     }
                     content = data;
+                    sha = filesha;
                     task.chain();
                 });
             }
@@ -165,7 +167,7 @@ define([
             }
         });
         task.onSuccess(function() {
-            callback(undefined, username, content);
+            callback(undefined, username, content, sha);
         });
         task.onError(function(error) {
             callback(error);
@@ -174,6 +176,100 @@ define([
     };
 
 
+    githubHelper.getRepos = function(callback) {
+        var task = new AsyncTask();
+        connect(task);
+        authenticate(task);
+        var repositories;
+        task.onRun(function() {
+            function readRepositories() {
+                var user = github.getUser();
+                user.repos(function(err, data) {
+                    if(err) {
+                        handleError(err, task);
+                        return;
+                    }
+                    repositories = data;
+                    task.chain();
+                });
+            }
+            task.chain(readRepositories);
+        });
+        task.onSuccess(function() {
+            callback(undefined, repositories);
+        });
+        task.onError(function(error) {
+            callback(error);
+        });
+        task.enqueue();
+    };
+
+     githubHelper.getBranchesForRepo = function(repoFullName, callback) {
+        var task = new AsyncTask();
+        connect(task);
+        authenticate(task);
+        var branches;
+        task.onRun(function() {
+           var repo, user;
+            
+            var parsedRepository = repoFullName.match(/[\/:]?([^\/:]+)\/([^\/]+?)(?:\.git)?$/);
+            if(parsedRepository) {
+                repo = parsedRepository[2];
+                user = parsedRepository[1];
+            }
+            var repo = github.getRepo(user, repo);
+
+            repo.listBranches(function(err, result) {
+                if(err) {
+                    handleError(err, task);
+                    return;
+                }
+                branches = result;
+                task.chain();
+            })
+        });
+        task.onSuccess(function() {
+            callback(undefined, branches);
+        });
+        task.onError(function(error) {
+            callback(error);
+        });
+        task.enqueue();
+    };
+
+
+    githubHelper.getFilesForPath = function(repoFullName, branch, path, callback) {
+        var task = new AsyncTask();
+        connect(task);
+        authenticate(task);
+        var files;
+        task.onRun(function() {
+           var repo, user;
+            
+            var parsedRepository = repoFullName.match(/[\/:]?([^\/:]+)\/([^\/]+?)(?:\.git)?$/);
+            if(parsedRepository) {
+                repo = parsedRepository[2];
+                user = parsedRepository[1];
+            }
+            var repo = github.getRepo(user, repo);
+
+            repo.getTree(branch, function(err, result) {
+                if(err) {
+                    handleError(err, task);
+                    return;
+                }
+                files = result;
+                task.chain();
+            })
+        });
+        task.onSuccess(function() {
+            callback(undefined, files);
+        });
+        task.onError(function(error) {
+            callback(error);
+        });
+        task.enqueue();
+    };
     
     githubHelper.upload = function(reponame, username, branch, path, content, commitMsg, callback) {
         var task = new AsyncTask();
