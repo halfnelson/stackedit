@@ -316,8 +316,8 @@ define([
 	eventMgr.addListener("onReady", function() {
 	
 		var documentEltTmpl = [
-			'<a href="#" class="list-group-item document clearfix" data-document-path="<%= document.path %> data-document-type=<%= document.type %>">',
-			'<div class="name"><i class="<%= document.type == "blob" ? "icon-file" : "icon-folder-closed" %>"></i> ',
+			'<a href="#" class="list-group-item document clearfix" data-document-sha="<%= document.sha %>" data-document-path="<%= document.path %>" data-document-type="<%= document.type %>">',
+			'<div class="name"><i class="<%= document.type == "blob" ? "icon-file" : "icon-folder" %>"></i> ',
 			'<%= document.path %></div>',
 			'</a>'
 		].join('');
@@ -326,6 +326,7 @@ define([
 		var $documentListElt = $(modalElt.querySelector('.document-list'));
 		var $repoSelect = $(modalElt.querySelector('#input-sync-import-github-repo'));
 		var $branchSelect = $(modalElt.querySelector('#input-sync-import-github-branch'));
+		var $pleaseWait = $(modalElt.querySelector(".please-wait"));
 
 
 		var selectedRepo = function() {
@@ -344,10 +345,12 @@ define([
 		
 		var popPath = function() {
 			currentPathSegments.pop();
+			updateFileList();
 		}
 
 		var pushPath = function(folder) {
 			currentPathSegments.push(folder);
+			updateFileList();
 		}
 
 		var updateRepoList = _.debounce(function() {
@@ -365,6 +368,7 @@ define([
 		}, 10, true);
 
 		var updateBranchList = _.debounce(function(){
+			$pleaseWait.show();
 			var repo = selectedRepo();
 			$branchSelect.children('option').remove();
 			if (!repo) {
@@ -392,21 +396,40 @@ define([
 		}, 10, true);
 
 		var updateFileList = _.debounce(function(){
+			$pleaseWait.show();
 			var repo = selectedRepo();
 			var branch = selectedBranch();
 			var path = currentPath();
+			console.log("loading",repo,branch,path)
 			githubHelper.getFilesForPath(repo, branch, path, function(err, files) {
 
-				var sortedFiles = _(files).sortBy(function(f) {  return f.type == "blob" ? "Z"+f.path : "A"+f.path });          })
+				var sortedFiles = _(files).sortBy(function(f) {  return f.type == "blob" ? "Z"+f.path : "A"+f.path });        
 
+				var documentListHtml = _.reduce(sortedFiles, function(result, document) {
+					
+					return result + _.template(documentEltTmpl, {
+						document: document,
+					});
+				}, '');
+				$pleaseWait.hide();
+				$documentListElt.html(documentListHtml);
 
-				console.log('got files',files);
 			});
 		}, 10, true);
 
 		$repoSelect.on("change", updateBranchList);
 		$branchSelect.on("change", updateFileList);
-		
+		$documentListElt.on("click", ".document", function(e) {
+			var el = e.currentTarget;
+			var type = $(el).attr("data-document-type");
+			var path = $(el).attr("data-document-path");
+			var sha = $(el).attr("data-document-sha");
+			console.log("clicked",type, path)
+			if (type == "tree") {
+				pushPath(path);
+			}
+			console.log("clicked",el);
+		})
 		$(modalElt)
 			.on('show.bs.modal', function() {
 				updateRepoList();

@@ -258,7 +258,7 @@ define([
                 treePath = treePath + "/" + path
             }
 
-            repo.getTree(branch, function(err, result) {
+            repo.getTree(treePath, function(err, result) {
                 if(err) {
                     handleError(err, task);
                     return;
