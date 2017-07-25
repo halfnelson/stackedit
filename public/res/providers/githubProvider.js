@@ -316,10 +316,9 @@ define([
 	eventMgr.addListener("onReady", function() {
 	
 		var documentEltTmpl = [
-			'<a href="#" class="list-group-item document clearfix" data-document-id="<%= document._id %>">',
-			'<div class="date pull-right"><%= date %></div></div>',
-			'<div class="name"><i class="icon-file"></i> ',
-			'<%= document.title %></div>',
+			'<a href="#" class="list-group-item document clearfix" data-document-path="<%= document.path %> data-document-type=<%= document.type %>">',
+			'<div class="name"><i class="<%= document.type == "blob" ? "icon-file" : "icon-folder-closed" %>"></i> ',
+			'<%= document.path %></div>',
 			'</a>'
 		].join('');
 
@@ -388,7 +387,7 @@ define([
 				if (hasMaster) {
 					$branchSelect.val("master");
 				}
-
+				updateFileList();
 			})
 		}, 10, true);
 
@@ -397,6 +396,10 @@ define([
 			var branch = selectedBranch();
 			var path = currentPath();
 			githubHelper.getFilesForPath(repo, branch, path, function(err, files) {
+
+				var sortedFiles = _(files).sortBy(function(f) {  return f.type == "blob" ? "Z"+f.path : "A"+f.path });          })
+
+
 				console.log('got files',files);
 			});
 		}, 10, true);

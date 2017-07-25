@@ -1,5 +1,5 @@
 CACHE MANIFEST
-#Date Mon Jul 24 2017 14:25:55 GMT+1000 (E. Australia Standard Time)
+#Date Tue Jul 25 2017 09:35:00 GMT+1000 (E. Australia Standard Time)
 
 CACHE:
 .
@@ -149,6 +149,7 @@ res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/AMS/Regular/PUA.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/AMS/Regular/SpacingModLetters.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/AMS/Regular/SuppMathOperators.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Caligraphic/Bold/Main.js?rev=2.6.1
+res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Caligraphic/Regular/Main.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Bold/BasicLatin.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Bold/Main.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Bold/Other.js?rev=2.6.1
@@ -157,7 +158,6 @@ res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Regular/BasicLatin.js?re
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Regular/Main.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Regular/Other.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Fraktur/Regular/PUA.js?rev=2.6.1
-res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Caligraphic/Regular/Main.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Main/Bold/Arrows.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Main/Bold/BasicLatin.js?rev=2.6.1
 res/bower-libs/MathJax/jax/output/SVG/fonts/TeX/Main/Bold/CombDiacritMarks.js?rev=2.6.1

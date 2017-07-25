@@ -253,6 +253,11 @@ define([
             }
             var repo = github.getRepo(user, repo);
 
+            var treePath = branch;
+            if (path && path != "") {
+                treePath = treePath + "/" + path
+            }
+
             repo.getTree(branch, function(err, result) {
                 if(err) {
                     handleError(err, task);

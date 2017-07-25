@@ -1,0 +1,20 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/docs": true,
+        "**/res-min": true
+    },
+
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+         "**/docs": true,
+        "**/res-min": true
+    }
+}
