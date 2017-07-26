@@ -10,8 +10,9 @@ define([
 	"helpers/githubHelper"
 ], function(_, utils, Provider, settings, eventMgr, fileSystem, fileMgr, storage, githubHelper) {
 
-
-  
+	var PROVIDER_GITHUB = "github";
+	  
+	var merge = settings.conflictMode == 'merge';
 
 
 	var githubProvider = new Provider("github", "GitHub");
@@ -42,7 +43,7 @@ define([
 
 	githubProvider.generateSyncIndex = function(attributes) {
 		var result = [
-			"GITHUB_PROVIDER",
+			PROVIDER_GITHUB,
 			attributes.username,
 			attributes.repository,
 			attributes.branch,
@@ -159,162 +160,188 @@ define([
 	 * Synchronizer Support 
 	 */
 
-	 githubProvider.importFiles = function() {
-        githubHelper.picker(function(error, username, repo, branch, path) {
-            if(error || !username || !repo || !branch || !path) {
-                return;
-            }
-			
-			var syncAttributes = {
-				username: username,
-				repository: repo,
-				branch: branch,
-				path: path,
-				provider: githubProvider,
-				sha: false
-			}
+	githubProvider.importFiles = function() {
+ 		var $selected = $(document.querySelector("#input-sync-import-selected"));
+ 		var path = $selected.attr("data-document-path");
+		var repo = $selected.attr("data-document-repo");
+		var branch = $selected.attr("data-document-branch" );
+		var parsedRepository = repo.match(/[\/:]?([^\/:]+)\/([^\/]+?)(?:\.git)?$/);
+		if(parsedRepository) {
+			repo = parsedRepository[2];
+			username = parsedRepository[1];
+		} else {
+			return;
+		}
 
-			var syncIndex = githubProvider.createSyncIndex(syncAttributes);
-			syncAttributes.syncIndex = syncIndex;
-			var syncLocations = {};
-            syncLocations[syncAttributes.syncIndex] = syncAttributes;
-
-			var fileDesc = fileMgr.getFileFromSyncIndex(syncIndex);
-			if(fileDesc !== undefined) {
-				return eventMgr.onError('"' + fileDesc.title + '" is already in your local documents.');
-			}
+		if(!username || !repo || !branch || !path) {
+			return;
+		}
 		
-			githubProvider.read(syncAttributes, function(content, sha) {
-				syncAttributes.sha = sha;
-				fileDesc = fileMgr.createFile(githubProvider.generateTitleFromAttributes(syncAttributes), content, null, syncLocations);
-				fileMgr.selectFile(fileDesc);
-				eventMgr.onSyncImportSuccess([fileDesc], githubProvider);
-			});
-           
-        });
+		var syncAttributes = {
+			username: username,
+			repository: repo,
+			branch: branch,
+			path: path,
+			provider: githubProvider,
+			sha: false
+		}
+
+		var syncIndex = githubProvider.generateSyncIndex(syncAttributes);
+		syncAttributes.syncIndex = syncIndex;
+		var syncLocations = {};
+		syncLocations[syncAttributes.syncIndex] = syncAttributes;
+
+		var fileDesc = fileMgr.getFileFromSyncIndex(syncIndex);
+		if(fileDesc !== undefined) {
+			return eventMgr.onError('"' + fileDesc.title + '" is already in your local documents.');
+		}
+	
+		githubProvider.read(syncAttributes, function(content, sha) {
+			syncAttributes.sha = sha;
+			var title = githubProvider.generateTitleFromAttributes(syncAttributes);
+			syncAttributes.contentCRC = utils.crc32(content);
+			syncAttributes.titleCRC = utils.crc32(title);
+
+			if(merge === true) {
+				// Need to store the whole content for merge
+				syncAttributes.content = content;
+				syncAttributes.title = title;
+				syncAttributes.discussionList = '{}';
+			}
+
+			fileDesc = fileMgr.createFile(title, content, null, syncLocations);
+			fileMgr.selectFile(fileDesc);
+			eventMgr.onSyncImportSuccess([fileDesc], githubProvider);
+		});
+		
+        
     };
-/*
+
     githubProvider.exportFile = function(event, title, content, discussionListJSON, frontMatter, callback) {
-        var path = utils.getInputTextValue("#input-sync-export-dropbox-path", event);
-        path = checkPath(path);
-        if(path === undefined) {
-            return callback(true);
-        }
-        // Check that file is not synchronized with another one
-        var syncIndex = githubProvider(generateSyncIndex);
+		var repo = utils.getInputTextValue("#input-sync-export-github-repo", event);
+		var branch = utils.getInputTextValue("#input-sync-export-github-branch", event);
+		var filename = utils.getInputTextValue("#input-sync-export-github-filename", event);
+		var folder = utils.getInputTextValue("#input-sync-export-github-path", event);
+
+		if (!branch || !filename || !repo ) {
+			return callback(true);
+		}
+
+		var parsedRepository = repo.match(/[\/:]?([^\/:]+)\/([^\/]+?)(?:\.git)?$/);
+		if(parsedRepository) {
+			repo = parsedRepository[2];
+			username = parsedRepository[1];
+		} else {
+			return callback(true);
+		}
+		
+		var path = folder ? (folder + "/" + filename) : filename;
+
+        	
+		var syncAttributes = {
+			username: username,
+			repository: repo,
+			branch: branch,
+			path: path,
+			provider: githubProvider,
+			sha: false
+		}
+		
+		// Check that file is not synchronized with another one
+		var syncIndex = githubProvider.generateSyncIndex(syncAttributes);
         var fileDesc = fileMgr.getFileFromSyncIndex(syncIndex);
         if(fileDesc !== undefined) {
             var existingTitle = fileDesc.title;
             eventMgr.onError('File path is already synchronized with "' + existingTitle + '".');
             return callback(true);
-        }
-        var data = dropboxProvider.serializeContent(content, discussionListJSON);
-        dropboxHelper.upload(path, data, function(error, result) {
-            if(error) {
-                return callback(error);
-            }
-            var syncAttributes = createSyncAttributes(result.path, result.versionTag, content, discussionListJSON);
-            callback(undefined, syncAttributes);
-        });
+		}
+
+		var commitMsg = settings.commitMsg;
+
+		githubHelper.upload(syncAttributes.repository, syncAttributes.username, syncAttributes.branch, syncAttributes.path, content, commitMsg, function(err, username, sha) {
+			if (err) {
+				return callback(err, true);
+			}
+			syncAttributes.sha = sha;
+			syncAttributes.contentCRC = utils.crc32(content);
+			syncAttributes.titleCRC = utils.crc32(title);
+			syncAttributes.discussionListCRC = utils.crc32(discussionListJSON);
+			syncAttributes.syncIndex = syncIndex
+			if(merge === true) {
+				// Need to store the whole content for merge
+				syncAttributes.content = content;
+				syncAttributes.title = title;
+				syncAttributes.discussionList = discussionListJSON;
+			}
+			callback(undefined, syncAttributes);
+		});
     };
-*/
+
     githubProvider.syncUp = function(content, contentCRC, title, titleCRC, discussionList, discussionListCRC, frontMatter, syncAttributes, callback) {
-        if(
-            (syncAttributes.contentCRC == contentCRC) && // Content CRC hasn't changed
-            (syncAttributes.discussionListCRC == discussionListCRC) // Discussion list CRC hasn't changed
-        ) {
+        if(syncAttributes.contentCRC == contentCRC) {
             return callback(undefined, false);
         }
-        var uploadedContent = dropboxProvider.serializeContent(content, discussionList);
-        dropboxHelper.upload(syncAttributes.path, uploadedContent, function(error, result) {
-            if(error) {
-                return callback(error, true);
-            }
-            syncAttributes.version = result.versionTag;
-            if(merge === true) {
-                // Need to store the whole content for merge
-                syncAttributes.content = content;
-                syncAttributes.discussionList = discussionList;
-            }
-            syncAttributes.contentCRC = contentCRC;
-            syncAttributes.titleCRC = titleCRC; // Not synchronized but has to be there for syncMerge
+	    
+		var commitMsg = settings.commitMsg;
+		console.log("syncing up",title);
+		githubHelper.upload(syncAttributes.repository, syncAttributes.username, syncAttributes.branch, syncAttributes.path, content, commitMsg, function(err, username, sha) {
+			if (err) {
+				return callback(err, true);
+			}
+			syncAttributes.sha = sha;
+			syncAttributes.contentCRC = contentCRC;
+			syncAttributes.titleCRC = titleCRC; // Not synchronized but has to be there for syncMerge
             syncAttributes.discussionListCRC = discussionListCRC;
-
-            callback(undefined, true);
-        });
+			callback(undefined, true);
+		});
     };
 
     githubProvider.syncDown = function(callback) {
-        var lastChangeId = storage[PROVIDER_DROPBOX + ".lastChangeId"];
-        dropboxHelper.checkChanges(lastChangeId, function(error, changes, newChangeId) {
-            if(error) {
-                return callback(error);
-            }
-            var interestingChanges = [];
-            _.each(changes, function(change) {
-                var syncIndex = createSyncIndex(change.path);
-                var fileDesc = fileMgr.getFileFromSyncIndex(syncIndex);
-                var syncAttributes = fileDesc && fileDesc.syncLocations[syncIndex];
-                if(!syncAttributes) {
-                    return;
-                }
-                // Store fileDesc and syncAttributes references to avoid 2 times search
-                change.fileDesc = fileDesc;
-                change.syncAttributes = syncAttributes;
-                // Delete
-                if(change.wasRemoved === true) {
-                    interestingChanges.push(change);
-                    return;
-                }
-                // Modify
-                if(syncAttributes.version != change.stat.versionTag) {
-                    interestingChanges.push(change);
-                }
-            });
-            dropboxHelper.downloadContent(interestingChanges, function(error, changes) {
-                if(error) {
-                    callback(error);
-                    return;
-                }
-                function mergeChange() {
-                    if(changes.length === 0) {
-                        storage[PROVIDER_DROPBOX + ".lastChangeId"] = newChangeId;
-                        return callback();
-                    }
-                    var change = changes.pop();
-                    var fileDesc = change.fileDesc;
-                    var syncAttributes = change.syncAttributes;
-                    // File deleted
-                    if(change.wasRemoved === true) {
-                        eventMgr.onError('"' + fileDesc.title + '" has been removed from Dropbox.');
-                        fileDesc.removeSyncLocation(syncAttributes);
-                        return eventMgr.onSyncRemoved(fileDesc, syncAttributes);
-                    }
-                    var file = change.stat;
-                    var parsedContent = dropboxProvider.parseContent(file.content);
-                    var remoteContent = parsedContent.content;
-                    var remoteDiscussionListJSON = parsedContent.discussionListJSON;
-                    var remoteDiscussionList = parsedContent.discussionList;
-                    var remoteCRC = dropboxProvider.syncMerge(fileDesc, syncAttributes, remoteContent, fileDesc.title, remoteDiscussionList, remoteDiscussionListJSON);
-                    // Update syncAttributes
-                    syncAttributes.version = file.versionTag;
-                    if(merge === true) {
-                        // Need to store the whole content for merge
-                        syncAttributes.content = remoteContent;
-                        syncAttributes.discussionList = remoteDiscussionList;
-                    }
-                    syncAttributes.contentCRC = remoteCRC.contentCRC;
-                    syncAttributes.discussionListCRC = remoteCRC.discussionListCRC;
-                    utils.storeAttributes(syncAttributes);
-                    setTimeout(mergeChange, 5);
-                }
-                setTimeout(mergeChange, 5);
-            });
-        });
-    };
+		var downloadFileList = [];
 
-	eventMgr.addListener("onReady", function() {
-	
+		function fileDown() {
+			if(downloadFileList.length === 0) {
+				return callback();
+			}
+			var fileDesc = downloadFileList.pop();
+			var allSyncAttribute = _.values(fileDesc.syncLocations);
+			var syncAttributes = _(allSyncAttribute).find(function(a) { return a.provider.providerId == githubProvider.providerId });
+
+			if (syncAttributes) {
+				console.log("syncing down",fileDesc.title);
+				githubProvider.read(syncAttributes, function(content, sha) {
+					//shim things we dont sync
+					var remoteTitle = fileDesc.title;
+					var remoteDiscussionList = fileDesc.discussionList;
+					var remoteDiscussionListJSON = fileDesc.discussionListJSON;
+
+					var remoteCRC = githubProvider.syncMerge(fileDesc, syncAttributes, content, remoteTitle, remoteDiscussionList, remoteDiscussionListJSON);
+					
+					// Update syncAttributes
+					syncAttributes.sha = sha;
+					if(merge === true) {
+						// Need to store the whole content for merge
+						syncAttributes.content = content;
+						syncAttributes.title = remoteTitle;
+						syncAttributes.discussionList = remoteDiscussionListJSON;
+					}
+					syncAttributes.contentCRC = remoteCRC.contentCRC;
+					syncAttributes.titleCRC = remoteCRC.titleCRC;
+					syncAttributes.discussionListCRC = remoteCRC.discussionListCRC;
+					utils.storeAttributes(syncAttributes);
+					setTimeout(fileDown, 5);
+				});
+			} else {
+				setTimeout(fileDown, 5);
+			}
+		}
+
+		downloadFileList = _.values(fileSystem);
+		fileDown();
+	};
+
+
+	function createRepoBrowser(modalElt, onFileClick) {
 		var documentEltTmpl = [
 			'<a href="#" class="list-group-item document clearfix" data-document-sha="<%= document.sha %>" data-document-path="<%= document.path %>" data-document-type="<%= document.type %>">',
 			'<div class="name"><i class="<%= document.type == "blob" ? "icon-file" : "icon-folder" %>"></i> ',
@@ -322,13 +349,16 @@ define([
 			'</a>'
 		].join('');
 
-		var modalElt = document.querySelector('.modal-download-github');
+		
+		
 		var $documentListElt = $(modalElt.querySelector('.document-list'));
-		var $repoSelect = $(modalElt.querySelector('#input-sync-import-github-repo'));
-		var $branchSelect = $(modalElt.querySelector('#input-sync-import-github-branch'));
+		var $repoSelect = $(modalElt.querySelector('.input-github-repo-selector'));
+		var $branchSelect = $(modalElt.querySelector('.input-github-branch-selector'));
 		var $pleaseWait = $(modalElt.querySelector(".please-wait"));
-
-
+		var $currentFolder = $(modalElt.querySelector(".current-folder"));
+		var $upButton = $(modalElt.querySelector(".action-github-folder-up"));
+		var $currentPathInput = $(modalElt.querySelector(".input-github-path"));
+		
 		var selectedRepo = function() {
 			return $repoSelect.val();
 		}
@@ -340,20 +370,51 @@ define([
 		var currentPathSegments = [];
 
 		var currentPath = function() {
-			return currentPathSegments.join("/");
+			if (currentPathSegments.length == 0) return { path: '/', tree: selectedBranch() };
+			return currentPathSegments[currentPathSegments.length-1];
+		}
+
+		var currentPathFolder = function() {
+			return _(currentPathSegments).map(function(s) { return s.path; }).join("/");
 		}
 		
+		var currentPathTree = function() {
+			return currentPath().tree;
+		}
+
+		var resetPath = function() {
+			currentPathSegments = [];
+			updateCurrentFolder();
+		}
+
 		var popPath = function() {
 			currentPathSegments.pop();
+			updateCurrentFolder();
 			updateFileList();
 		}
 
-		var pushPath = function(folder) {
-			currentPathSegments.push(folder);
+		var pushPath = function(folder, sha) {
+			currentPathSegments.push({ path: folder, tree: sha });
+			updateCurrentFolder();
 			updateFileList();
+		}
+
+		var updateCurrentFolder = function() {
+			$currentPathInput.val(currentPathFolder());
+			$currentFolder.text("/"+currentPathFolder());
+		}
+
+		var showWait = function() {
+			$documentListElt.empty();
+			$pleaseWait.show();
+		}
+
+		var hideWait = function() {
+			$pleaseWait.hide();
 		}
 
 		var updateRepoList = _.debounce(function() {
+			showWait();
 			githubHelper.getRepos(function(err, repos) {
 				if (err) {
 					throw err;
@@ -368,7 +429,7 @@ define([
 		}, 10, true);
 
 		var updateBranchList = _.debounce(function(){
-			$pleaseWait.show();
+			showWait();
 			var repo = selectedRepo();
 			$branchSelect.children('option').remove();
 			if (!repo) {
@@ -391,17 +452,18 @@ define([
 				if (hasMaster) {
 					$branchSelect.val("master");
 				}
+				resetPath();
 				updateFileList();
 			})
 		}, 10, true);
 
 		var updateFileList = _.debounce(function(){
-			$pleaseWait.show();
+			showWait();
 			var repo = selectedRepo();
 			var branch = selectedBranch();
-			var path = currentPath();
-			console.log("loading",repo,branch,path)
-			githubHelper.getFilesForPath(repo, branch, path, function(err, files) {
+			var pathSha = currentPathTree();
+			console.log("loading",repo,branch,pathSha)
+			githubHelper.getFilesForTree(repo, pathSha, function(err, files) {
 
 				var sortedFiles = _(files).sortBy(function(f) {  return f.type == "blob" ? "Z"+f.path : "A"+f.path });        
 
@@ -411,12 +473,13 @@ define([
 						document: document,
 					});
 				}, '');
-				$pleaseWait.hide();
+				hideWait();
 				$documentListElt.html(documentListHtml);
 
 			});
 		}, 10, true);
 
+		$upButton.on("click", popPath );
 		$repoSelect.on("change", updateBranchList);
 		$branchSelect.on("change", updateFileList);
 		$documentListElt.on("click", ".document", function(e) {
@@ -426,7 +489,10 @@ define([
 			var sha = $(el).attr("data-document-sha");
 			console.log("clicked",type, path)
 			if (type == "tree") {
-				pushPath(path);
+				pushPath(path, sha);
+			}
+			if (type == "blob") {
+				onFileClick(selectedRepo(), selectedBranch(), currentPathFolder()+"/"+path )
 			}
 			console.log("clicked",el);
 		})
@@ -434,6 +500,35 @@ define([
 			.on('show.bs.modal', function() {
 				updateRepoList();
 			});
+
+
+	}
+
+
+
+	eventMgr.addListener("onReady", function() {
+
+		//import dialog
+		var modalElt = document.querySelector('.modal-download-github');
+		
+		var $openButton = $(modalElt.querySelector(".action-sync-import-github"));
+		var $selected = $(modalElt.querySelector("#input-sync-import-selected"));
+
+		function onFileSelected(repo, branch, path) {
+			$selected.attr("data-document-path", path );
+			$selected.attr("data-document-repo", repo );
+			$selected.attr("data-document-branch", branch );
+			$openButton.trigger("click");
+		}
+
+		createRepoBrowser(modalElt, onFileSelected);
+
+
+		//export dialog
+		var modalElt = document.querySelector('.modal-upload-github');
+		createRepoBrowser(modalElt);
+		
+
 	
 
 

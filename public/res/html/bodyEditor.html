@@ -562,56 +562,46 @@
 				<button type="button" class="close" data-dismiss="modal"
 					aria-hidden="true">&times;</button>
 				<h2 class="modal-title">Save on Github</h2>
-			</div>
-			<div class="modal-body">
-				<p>
-					This will save "<span class="file-title"></span>" to your <i
-						class="icon-provider-github"></i>
-					<code>Account</code>
-					account and keep it synchronized.
-				</p>
-				<div class="form-horizontal">
-					<div class="form-group modal-publish-github">
-						<label class="col-sm-4 control-label"
-							for="input-sync-export-github-repo">Repository</label>
-						<div class="col-sm-7">
-							<input type="text" id="input-sync-export-github-repo"
-								placeholder="someuser/somerepo" class="form-control">
+				 <div class="form list-mode">
+					<div class="row">
+						<div class="form-group col-sm-6">
+							<label for="input-sync-export-github-repo" class="control-label">Repository</label>
+							<select id="input-sync-export-github-repo" class="form-control input-github-repo-selector">
+							</select>
 						</div>
-					</div>
-					<div class="form-group modal-publish-github">
-						<label class="col-sm-4 control-label"
-							for="input-sync-export-github-branch">Branch</label>
-						<div class="col-sm-7">
-							<input type="text" id="input-sync-export-github-branch"
-								placeholder="branch-name" class="form-control">
-						</div>
-					</div>
-					<div class="form-group modal-publish-ssh modal-publish-github">
-						<label class="col-sm-4 control-label"
-							for="input-sync-export-github-repo-path">File path</label>
-						<div class="col-sm-7">
-							<input type="text" id="input-sync-export-github-path"
-								placeholder="path/to/file.md" class="form-control">
-							<span class="help-block"> File path is composed of both
-								folder and filename. </span>
+						<div class="form-group col-sm-6">
+							<label for="input-sync-export-github-branch" class="control-label">Branch</label>
+							<select id="input-sync-export-github-branch" class="form-control input-github-branch-selector">
+							</select>
 						</div>
 					</div>
 				</div>
-				<blockquote>
-					<b>Note:</b>
-					<ul>
-						<li>Github file path does not depend on document title.</li>
-						<li>The title of your document will not be synchronized.</li>
-						<li>Destination folder must exist.</li>
-						<li>Any existing file at this location will be overwritten.</li>
-					</ul>
-				</blockquote>
+				<div><a href="#" class="action-github-folder-up"><i class="icon-up-circled"></i>Up</a>&nbsp;&nbsp;<span class="current-folder">/</span>
+					<input type="hidden" id="input-sync-export-github-path" class="input-github-path">
+				</div>		
+			</div>
+			<div class="modal-body">
+				<div class="list-group document-list list-mode"></div>
+				<div class="list-mode text-center">
+					<div class="please-wait"><b>Loading...</b></div>
+				</div>
 			</div>
 			<div class="modal-footer">
-				<a href="#" class="btn btn-default" data-dismiss="modal">Cancel</a>
-				<a href="#" data-dismiss="modal"
-					class="btn btn-primary action-sync-export-github">OK</a>
+				<div>
+				 	<div class="form-horizontal">
+						<div class="form-group">
+							<label for="input-sync-export-github-filename" class="control-label col-sm-3">Filename</label>
+							<div class="col-sm-8">
+								<input id="input-sync-export-github-filename" class="form-control" placeholder="My Document Name.md"/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div>
+					<a href="#" class="btn btn-default" data-dismiss="modal">Cancel</a>
+					<a href="#" data-dismiss="modal"
+						class="btn btn-primary action-sync-export-github">OK</a>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -629,29 +619,30 @@
 					<div class="row">
 						<div class="form-group col-sm-6">
 							<label for="input-sync-import-github-repo" class="control-label">Repository</label>
-							<select id="input-sync-import-github-repo" class="form-control">
+							<select id="input-sync-import-github-repo" class="form-control input-github-repo-selector">
 							</select>
 						</div>
 						<div class="form-group col-sm-6">
 							<label for="input-sync-import-github-branch" class="control-label">Branch</label>
-							<select id="input-sync-import-github-branch" class="form-control">
+							<select id="input-sync-import-github-branch" class="form-control input-github-branch-selector">
 							</select>
 						</div>
 					</div>
-                </div>
+				</div>
+					<div><a href="#" class="action-github-folder-up"><i class="icon-up-circled"></i>Up</a>&nbsp;&nbsp;<span class="current-folder">/</span>
+					<input type="hidden" id="input-sync-import-github-path" class="input-github-path">
+					</div>		
             </div>
             <div class="modal-body">
-				<div><a href="#" class="btn btn-small action-sync-import-github-folder-up">Up</a>&nbsp;<span class="current-folder">/</span></div>
+			
 				<div class="list-group document-list list-mode"></div>
 				<div class="list-mode text-center">
-					<div class="please-wait"><b>Please wait...</b></div>
+					<div class="please-wait"><b>Loading...</b></div>
 				</div>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-default list-mode" data-dismiss="modal">Cancel</a>
-                <a href="#" data-dismiss="modal"
-                   class="btn btn-primary action-sync-import-github list-mode">Open</a>
-            </div>
+			</div>
+			 <a href="#" data-dismiss="modal"
+				   class="action-sync-import-github hidden">Open</a>
+			<input type="hidden" id="input-sync-import-selected">
         </div>
     </div>
 </div>

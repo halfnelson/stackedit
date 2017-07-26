@@ -238,7 +238,7 @@ define([
     };
 
 
-    githubHelper.getFilesForPath = function(repoFullName, branch, path, callback) {
+    githubHelper.getFilesForTree = function(repoFullName, tree, callback) {
         var task = new AsyncTask();
         connect(task);
         authenticate(task);
@@ -253,12 +253,7 @@ define([
             }
             var repo = github.getRepo(user, repo);
 
-            var treePath = branch;
-            if (path && path != "") {
-                treePath = treePath + "/" + path
-            }
-
-            repo.getTree(treePath, function(err, result) {
+            repo.getTree(tree, function(err, result) {
                 if(err) {
                     handleError(err, task);
                     return;
@@ -280,6 +275,7 @@ define([
         var task = new AsyncTask();
         connect(task);
         authenticate(task);
+        var sha;
         task.onRun(function() {
             function getUsername() {
                 var user = github.getUser();
@@ -292,6 +288,17 @@ define([
                     task.chain(write);
                 });
             }
+            function getSha() {
+                var repo = github.getRepo(username, reponame);
+                repo.getSha(branch,path, function(err,result) {
+                    if(err) {
+                        handleError(err, task);
+                        return;
+                    }
+                    sha = result;
+                    task.chain();
+                });
+            }
             function write() {
                 var repo = github.getRepo(username, reponame);
                 repo.write(branch, path, content, commitMsg, function(err) {
@@ -299,7 +306,7 @@ define([
                         handleError(err, task);
                         return;
                     }
-                    task.chain();
+                    task.chain(getSha);
                 });
             }
             if(username) {
@@ -310,7 +317,7 @@ define([
             }
         });
         task.onSuccess(function() {
-            callback(undefined, username);
+            callback(undefined, username, sha);
         });
         task.onError(function(error) {
             callback(error);
