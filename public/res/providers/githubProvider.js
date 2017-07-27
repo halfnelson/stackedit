@@ -16,6 +16,9 @@ define([
 
 
 	var githubProvider = new Provider("github", "GitHub");
+
+
+	
 	githubProvider.publishPreferencesInputIds = [
 		"github-repo",
 		"github-branch"
@@ -160,8 +163,15 @@ define([
 	 * Synchronizer Support 
 	 */
 
+
+	githubProvider.importPreferencesInputIds = [
+		"github-repo",
+		"github-branch",
+		"github-path"
+	]
+
 	githubProvider.importFiles = function() {
- 		var $selected = $(document.querySelector("#input-sync-import-selected"));
+ 		var $selected = $(document.querySelector("#input-sync-import-github-selected"));
  		var path = $selected.attr("data-document-path");
 		var repo = $selected.attr("data-document-repo");
 		var branch = $selected.attr("data-document-branch" );
@@ -215,7 +225,16 @@ define([
 		});
 		
         
-    };
+	};
+	
+	githubProvider.exportPreferencesInputIds = [
+		"github-repo",
+		"github-branch",
+		"github-path"
+	]
+
+
+
 
     githubProvider.exportFile = function(event, title, content, discussionListJSON, frontMatter, callback) {
 		var repo = utils.getInputTextValue("#input-sync-export-github-repo", event);
@@ -415,6 +434,14 @@ define([
 
 		var updateRepoList = _.debounce(function() {
 			showWait();
+			//keep current pref
+			var lastval = selectedRepo();
+
+			if (lastval && $repoSelect.children('option').length) {
+				//skip loading all repos
+				return updateBranchList();
+			}
+
 			githubHelper.getRepos(function(err, repos) {
 				if (err) {
 					throw err;
@@ -424,13 +451,20 @@ define([
 				_(sortedRepos).each(function(r) {
 					$repoSelect.append($("<option></option>").attr('value',r.full_name).text(r.full_name));
 				})
+				console.log("setting repo to ",lastval);
+				if (_(repos).find(function(i) { return i.full_name == lastval })) {
+					console.log("actually setting repo to ",lastval);
+					$repoSelect.val(lastval);
+				}
 				updateBranchList();
 			})
 		}, 10, true);
 
 		var updateBranchList = _.debounce(function(){
 			showWait();
+			var lastBranch = selectedBranch();
 			var repo = selectedRepo();
+
 			$branchSelect.children('option').remove();
 			if (!repo) {
 				$branchSelect.prop("disabled",true);
@@ -449,18 +483,30 @@ define([
 					if (r == "master") { hasMaster = true; }
 					$branchSelect.append($("<option></option>").attr('value',r).text(r));
 				})
-				if (hasMaster) {
+				if (lastBranch && (_(sortedBranches).indexOf(lastBranch) >= 0)) {
+						$branchSelect.val(lastBranch);
+				}
+				else if (hasMaster) {
 					$branchSelect.val("master");
 				}
-				resetPath();
 				updateFileList();
 			})
 		}, 10, true);
+
+
+		var fileListCurrentRepo = false;
+		var fileListCurrentBranch = false;
 
 		var updateFileList = _.debounce(function(){
 			showWait();
 			var repo = selectedRepo();
 			var branch = selectedBranch();
+
+			if (repo != fileListCurrentRepo || branch != fileListCurrentBranch) {
+				resetPath();
+			}
+			
+
 			var pathSha = currentPathTree();
 			console.log("loading",repo,branch,pathSha)
 			githubHelper.getFilesForTree(repo, pathSha, function(err, files) {
@@ -473,6 +519,10 @@ define([
 						document: document,
 					});
 				}, '');
+				
+				fileListCurrentBranch = branch;
+				fileListCurrentRepo = repo;
+
 				hideWait();
 				$documentListElt.html(documentListHtml);
 
@@ -512,7 +562,7 @@ define([
 		var modalElt = document.querySelector('.modal-download-github');
 		
 		var $openButton = $(modalElt.querySelector(".action-sync-import-github"));
-		var $selected = $(modalElt.querySelector("#input-sync-import-selected"));
+		var $selected = $(modalElt.querySelector("#input-sync-import-github-selected"));
 
 		function onFileSelected(repo, branch, path) {
 			$selected.attr("data-document-path", path );
